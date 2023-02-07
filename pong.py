@@ -5,6 +5,10 @@ from kivy.clock import Clock
 from kivy.properties import NumericProperty, ReferenceListProperty, ObjectProperty
 from kivy.uix.widget import Widget
 from kivy.vector import Vector
+from kivy.uix.button import Button
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.label import Label
+from kivy.uix.screenmanager import Screen, ScreenManager
 
 
 class PongPaddle(Widget):
@@ -64,13 +68,42 @@ class PongGame(Widget):
         if touch.x > self.width * 3 / 4:
             self.player2.center_y = touch.y
 
+class MenuScreen(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        layout = GridLayout(cols=1, spacing=10)
+        layout.add_widget(Label(text='Pong Game'))
+        btn1 = Button(text='Single Player')
+        btn1.bind(on_press=self.goto_game)
+        btn2 = Button(text='Multiplayer')
+        btn2.bind(on_press=self.goto_game)
+        layout.add_widget(btn1)
+        layout.add_widget(btn2)
+        self.add_widget(layout)
+
+    def goto_game(self, instance):
+        # Switch to the game screen
+        self.manager.current = 'game'
+
+class PongScreen(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.game = PongGame()
+        self.game.serve_ball()
+        Clock.schedule_interval(self.game.update, 1.0 / 60.0)
+        self.add_widget(self.game)
+
 
 class PongApp(App):
     def build(self):
-        game = PongGame()
-        game.serve_ball()
-        Clock.schedule_interval(game.update, 1.0 / 60.0)
-        return game
+        self.sm = ScreenManager()
+        self.menu = MenuScreen(name='menu')
+        self.game = PongScreen(name='game')
+        self.sm.add_widget(self.menu)
+        self.sm.add_widget(self.game)
+        self.sm.current = 'menu'
+        return self.sm
+
 
 
 PongApp().run()
